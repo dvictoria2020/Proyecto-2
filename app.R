@@ -1,7 +1,8 @@
 # carga de librerías
+
 library(shiny)
 library(shinydashboard)
-library( shinyWidgets )
+library(shinyWidgets)
 library(dplyr)
 library(sf)
 library(terra)
@@ -16,264 +17,229 @@ library(ggplot2)
 library(graphics)
 library(tidyverse)
 
-#Lectura datos zonas
-zonas <-
- st_read("https://raw.githubusercontent.com/mauguemu/prueba_tablero/master/Datos/capas/zonas_delimitadas.geojson",
- quiet = TRUE
- )
+# Lectura de una capa vectorial (GeoJSON) de división distrial de Santa Ana
+limite_distrital <-
+  st_read(
+    "https://dvictoria2020.github.io/Proyecto1-R/limite_distrital.geojson",
+    quiet = TRUE
+  )
+# Transformación del CRS del objeto división distrital
+limite_distrital <-
+  limite_distrital %>%
+  st_transform(4326)
 
-# Transformación del CRS del objeto zonas
-zonas <-
- zonas %>%
- st_transform(4326)
 
-#Lectura datos cuadrantes
-cuadrantes <-
- st_read("https://raw.githubusercontent.com/mauguemu/prueba_tablero/master/Datos/capas/cuadrantes.geojson",
- quiet = TRUE
- )
+# Lectura de una capa vectorial (GeoJSON) patentes de Santa Ana
+patentesST <-
+  st_read("https://dvictoria2020.github.io/tarea3-tablero-shiny/patentesST.geojson",
+          quiet = TRUE
+  )
 
-# Transformación del CRS de cuadrantes 
-cuadrantes <-
- cuadrantes %>%
- st_transform(4326)
+# Transformación del CRS del objeto patentes
+patentesST <-
+  patentesST %>%
+  st_transform(4326)
 
-#Lectura datos recursos patimoniales 
-recursos_patrimoniales <-
- st_read("https://raw.githubusercontent.com/mauguemu/prueba_tablero/master/Datos/capas/recursos_patrimonio_material.geojson",
- quiet = TRUE
- )
+# Lectura de archivo CSV de patentes comerciales en Santa Ana
+Patente_final <-
+  st_read(
+    "/vsicurl/https://dvictoria2020.github.io/Proyecto1-R/Patente_final.csv",
+    options = c(
+      "X_POSSIBLE_NAMES=Latitud",
+      "Y_POSSIBLE_NAMES=Longitud"
+    ),
+    quiet = TRUE
+  )
+# Asignación de un CRS al objeto patentes
+st_crs(Patente_final) <- 4326
 
-# Transformación del CRS de recursos patrimoniales
+# Lectura de capa raster de uso urbano
+uso_urbano_rWGS <-
+  rast(
+    "/vsicurl/https://dvictoria2020.github.io/Proyecto1-R/uso_urbano_rWGS.tif",
+  )
 
-recursos_patrimoniales <-
- recursos_patrimoniales %>%
- st_transform(4326)
 
-#lectura patrimonio_inmaterial
-patrimonio_inmaterial <-
- st_read(
- "/vsicurl/https://raw.githubusercontent.com/mauguemu/prueba_tablero/master/Datos/tablas/recursos_patrimonio_inmat.csv",
- quiet = TRUE
- )
+# Lista ordenada de actividad + "Todas"
+lista_actividad <- unique(patentesST$Actividad)
+lista_actividad <- sort(lista_actividad)
+lista_actividad <- c("Todas", lista_actividad)
 
-# Lista ordenada de estado + "Todos"
-lista_estado <- unique(recursos_patrimoniales$estado)
-lista_estado <- sort(lista_estado)
-lista_estado <- c("Todas", lista_estado)
-
-# Lista ordenada de subcategorias + "Todas"
-lista_subcategorias <- unique(recursos_patrimoniales$subcategoria)
-lista_subcategorias <- sort(lista_subcategorias)
-lista_subcategorias <- c("Todas", lista_subcategorias)
-
+# Lista ordenada de distritos + "Todos"
+lista_distritos <- unique(patentesST$Distrito)
+lista_distritos <- sort(lista_distritos)
+lista_distritos <- c("Todos", lista_distritos)
 
 # Componentes de la aplicación Shiny
 # Definición del objeto ui
-
-ui <- dashboardPage(
- dashboardHeader(title = "Patrimonio material"),
- dashboardSidebar(sidebarMenu(
- menuItem(
- text = "Filtros",
- selectInput(
- inputId = "estado",
- label = "Estado",
- choices = lista_estado,
- selected = "Todas"
- ),
- selectInput(
- inputId = "subcategoria",
- label = "Subcategoría",
- choices = lista_subcategorias,
- selected = "Todas"
- ),
- 
- numericRangeInput(
- inputId = "evaluacion_multicriterio",
- label = "Evaluación multicriterio",
- value = c(3,6.5),
- width = NULL,
- separator = " a ",
- min = 3,
- max = 6.5,
- step = NA
- ),
- startExpanded = TRUE
- )
- )),
- dashboardBody(fluidRow(
- box(
- title = "Mapa registros del patrimonio material",
- leafletOutput(outputId = "mapa"),
- width = 6
- ),
- box(
- title = "Registros del patrimonio material",
- DTOutput(outputId = "tabla"),
- width = 6
- )
- ),
- fluidRow(
- box(
- title = "Valoración de los recursos del patrimonio material",
- plotlyOutput(outputId = "grafico_evaluacion"),
- width = 12
- )
- ))
-)
-
-
+ui <- 
+  dashboardPage(
+    dashboardHeader(title = "Actividad comercial en Santa Ana"),
+    dashboardSidebar(sidebarMenu(
+      menuItem(
+        text = "Filtros",
+        selectInput(
+          inputId = "Actividad",
+          label = "Actividad Comercial",
+          choices = lista_actividad,
+          selected = "Todas"
+        ),
+        selectInput(
+          inputId = "Distrito",
+          label = "Distrito",
+          choices = lista_distritos,
+          selected = "Todos"
+        ),
+        startExpanded = TRUE
+      )
+    )),
+    dashboardBody(fluidRow(
+      box(
+        title = "Mapa distribución de patentes comerciales en Santa Ana",
+        leafletOutput(outputId = "mapa"),
+        width = 6
+      ),    
+      box(
+        title = "Registros de patentes comerciales", 
+        DTOutput(outputId = "tabla"),
+        width = 6
+      )
+    ),
+    
+    fluidRow(
+      box(
+        title = "Grafico",
+        plotOutput(outputId = "grafico"),
+        width = 12
+      )
+    ))
+  )
 server <- function(input, output, session) {
-
- filtrarRegistros <- reactive({
- # Remoción de geometrías y selección de columnas
- patrimonio_filtrado <-
- recursos_patrimoniales %>%
- dplyr::select(codigo,denominacion,dominio,subcategoria,estado,economico,disponibilidad,identidad_territorial,condicion,evaluacion_multicriterio,foto,ficha,id_recurso)
- 
- # Filtrado de felidae por rango
- patrimonio_filtrado <-
- patrimonio_filtrado %>%
- filter(
- evaluacion_multicriterio >= input$evaluacion_multicriterio[1] &
- evaluacion_multicriterio <= input$evaluacion_multicriterio[2]
- )
- # Filtrado de registros por estado
- if (input$estado != "Todas") {
- patrimonio_filtrado <-
- patrimonio_filtrado %>%
- filter(estado == input$estado)
- }
- # Filtrado de registros por subcategoría
- if (input$subcategoria != "Todas") {
- patrimonio_filtrado <-
- patrimonio_filtrado %>%
- filter(subcategoria == input$subcategoria)
- }
- 
- return(patrimonio_filtrado)
- })
-
-output$tabla <- renderDT({
- registros <- filtrarRegistros()
- 
- registros %>%
- st_drop_geometry() %>%
- select(codigo,denominacion, subcategoria, estado,evaluacion_multicriterio)%>%
- datatable(registros, options = list(language = list(url = '//cdn.datatables.net/plug-ins/1.11.3/i18n/es_es.json'), pageLength = 8))
- })
-
-output$mapa <- renderLeaflet({
- registros <-
- filtrarRegistros()
- 
- colores <- c('red', 'orange', 'yellow')
- 
- c_zona <- levels(as.factor(zonas$id_zona))
- 
- paleta <- colorFactor(palette = colores, domain = c_zona)
- 
- # Mapa leaflet básico con capas de zonas y recursos patrimoniales 
- leaflet() %>%
- addTiles() %>%
- setView(-83.0232, 9.9952, 15) %>%
- 
- addProviderTiles(
- providers$CartoDB.Positron, group = "Mapa base Carto_DB") %>%
- addProviderTiles(
- providers$Esri.WorldImagery, group = "Maba base Esri") %>%
- 
- addPolygons(
- data = zonas,
- color = ~paleta(id_zona),
- smoothFactor = 0.3,
- fillOpacity = 0.3,
- popup = ~nombre,
- label= ~id_zona,
- stroke = TRUE,
- weight = 2.0,
- group = "Zonas delimitadas"
- ) %>%
- 
- addPolygons(
- data = cuadrantes,
- color = "black",
- smoothFactor = 0.3,
- stroke = TRUE,
- weight = 1.0,
- group = "Cuadrantes"
- ) %>%
- 
-   addCircleMarkers(
-     data = registros,
-     stroke = F,
-     radius = 4,
-     popup = paste0(
-       "<strong>Recurso: </strong>",
-       registros$denominacion,
-       "<br>",
-       "<strong>Subcategoría: </strong>",
-       registros$subcategoria,
-       "<br>",
-       "<strong>Estado de conservación: </strong>",
-       registros$estado,
-       "<br>",
-       "<img src='",
-       registros$foto,
-       "",
-       "'width='200'/>",
-       "<br>",
-       "<a href='",
-       registros$ficha,
-       "",
-       "'>Ficha</a>"
-     ),
-     label = ~ codigo,
-     fillColor = 'orange',
-     fillOpacity = 1,
-     group = "Recursos patrimoniales"
-   ) %>% 
- addSearchOSM()%>%
- addResetMapButton()%>%
- addMouseCoordinates()%>%
- addLayersControl(
- baseGroups = c("Mapa base Carto_DB","Mapa base Esri"),
- overlayGroups = c("Zonas delimitadas","Cuadrantes", "Recursos patrimoniales"),
- options = layersControlOptions(collapsed = T)
- )
- })
-
-output$grafico_evaluacion <- renderPlotly({
- registros <- filtrarRegistros()
- 
- registros %>%
- st_drop_geometry() %>%
- select(denominacion,economico,disponibilidad,identidad_territorial,condicion)%>%
- pivot_longer(c("economico","disponibilidad","identidad_territorial","condicion"), names_to = "criterio",values_to = "valoracion")%>%
- ggplot(aes(x = valoracion, y = denominacion, fill = criterio)) +
- ggtitle("Valoración de los recursos patrimoniales") +
- ylab("Recurso") +
- xlab("Valoración multicriterio") +
- geom_col()%>%
- config(locale = "es")
- 
- })
-
- 
+  filtrarRegistros <- reactive({
+    # Remoción de geometrías y selección de columnas
+    patente_filtrada <-
+      patentesST %>%
+      dplyr::select(Nombre_comercio, Aprobacion, Actividad, Tipo_persona, Distrito)
+    
+    
+    # Filtrado de actividad
+    if (input$Actividad != "Todas") {
+      patente_filtrada <-
+        patentesST %>%
+        filter(Actividad == input$Actividad)
+    }    
+    
+    
+    # Filtrado de actividad por distrito
+    if (input$Distrito != "Todos") {
+      patente_filtrada <-
+        patente_filtrada %>%
+        filter(Distrito == input$Distrito)
+    }
+    
+    return(patente_filtrada)
+    
+  })
+  
+  
+  ### Registros de presencia
+  output$tabla <- renderDT({
+    registros <- filtrarRegistros()
+    
+    registros %>%
+      st_drop_geometry() %>%
+      dplyr::select(Aprobacion, Actividad, Nombre_comercio, Tipo_persona, Distrito) %>%
+      datatable(registros, options = list(language = list(url = '//cdn.datatables.net/plug-ins/1.11.3/i18n/es_es.json'), pageLength = 8))
+  })
+  
+  ### Mapa de distribución
+  
+  output$mapa <- renderLeaflet({
+    registros <-
+      filtrarRegistros()
+    
+    uso_urbano_rWGS_rl <- raster::raster(uso_urbano_rWGS)
+    
+    
+    # Mapa Leaflet con capas de provincias y registros de presencia de felinos
+    leaflet() %>%
+      addTiles(options = providerTileOptions(noWrap = TRUE), group = "Open Street Maps") %>%
+      addProviderTiles("Esri.WorldImagery", group = "Imagen Satelital") %>%
+      addPolygons(
+        data = limite_distrital,
+        color = "purple",
+        fillColor = "transparent",
+        stroke = TRUE,
+        weight = 2.0,
+        group = "Limite distrital"
+      ) %>% 
+      addRasterImage(
+        uso_urbano_rWGS_rl,
+        color= "#DDB892",
+        opacity = 0.6,
+        group = "Uso Urbano 2005"
+      )%>%
+      addCircleMarkers(
+        data = registros,
+        stroke = FALSE,
+        radius = 3,
+        fillColor = 'green',
+        fillOpacity = 1,
+        group = "Patentes comerciales",
+        popup = paste0(
+          "<strong>Distrito: </strong>",
+          registros$Distrito,
+          "<br>",
+          "<strong>Actividad Comercial: </strong>",
+          registros$Actividad),
+        label = paste0(
+          "Actividad: ", registros$Actividad,
+          ",",
+          "Distrito: ", registros$Distrito,
+          ", ",
+          "Fecha de aprobación:", registros$Aprobacion
+        )
+      ) %>% 
+      addSearchOSM() %>%
+      addResetMapButton() %>%
+      addMouseCoordinates() %>%
+      addMiniMap(tiles = providers$OpenStreetMap,
+                 toggleDisplay = TRUE) %>%
+      addLayersControl(
+        baseGroups = c("Open Street Maps", "Imagen Satelital"),
+        overlayGroups = c("Patentes comerciales","Uso Urbano 2005", "Limite distrital" ),
+        options = layersControlOptions(collapsed = FALSE
+        )
+      )
+  })
+  
+  ### Grafico2
+  output$grafico <- renderPlot({
+    # Preparación de los datos  
+    registros <- filtrarRegistros()
+    Actividad <-
+      registros %>%
+      st_drop_geometry() %>%
+      select(Actividad) %>%
+      rename(Actividad = Actividad) %>%
+      group_by(Actividad) %>%
+      summarise(suma = n()) %>%
+      filter(suma > 0)
+    
+    
+    ggplot(Actividad, aes(x = reorder(Actividad, -suma),y = suma)) +
+      geom_col(colour = "#FF4040", fill = "#7FFFD4",width = 0.6) +
+      geom_text(aes(label = suma), vjust = 1, colour = "black") +
+      ggtitle("Actividades comerciales en Santa Ana") +
+      theme(plot.title = element_text(hjust = 0.5),
+            axis.text.x = element_text(angle = 25,hjust = 1, vjust = 1)
+      ) +
+      xlab("Actividades") +
+      ylab("Cantidad")
+  })
+  
 }
 
+# Llamado a la función shinyApp()
+
 shinyApp(ui, server)
-
-
- 
- 
- 
-
-
-
-
-
-
-
-
