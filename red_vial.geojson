@@ -1,6 +1,6 @@
 {
 "type": "FeatureCollection",
-"name": "red_vial_ST",
+"name": "red_vial1",
 "crs": { "type": "name", "properties": { "name": "urn:ogc:def:crs:OGC:1.3:CRS84" } },
 "features": [
 { "type": "Feature", "properties": { "fid": 1, "nombre": "RADIAL COLON", "categoria": "NACIONAL", "distrito": "BRASIL", "nomenclatu": "V027", "num_utgv": "RN27", "cod_utgv": "1-09-RN27-00", "id": "851" }, "geometry": { "type": "MultiLineString", "coordinates": [ [ [ -84.22033886, 9.93590133 ], [ -84.22017145, 9.93595285 ], [ -84.21999529, 9.93602421 ], [ -84.21984308, 9.93610064 ], [ -84.21983304, 9.93610394 ] ] ] } },
