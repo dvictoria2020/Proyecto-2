@@ -1,0 +1,371 @@
+---
+title: "Patentes de Santa Ana"
+output: 
+  flexdashboard::flex_dashboard:
+    theme: cerulean
+    social: menu
+    source_code: embed
+runtime: shiny
+---
+
+```{r setup, include=FALSE}
+library(flexdashboard)
+library(dplyr)
+library(sf)
+library(terra)
+library(raster)
+library(DT)
+library(ggplot2)
+library(plotly)
+library(leaflet)
+library(leaflet.extras)
+library(leafem)
+library(shiny)
+library(shinydashboard)
+library(shinyWidgets)
+library(rgdal)
+library(tidyverse)
+library(rmapshaper)
+library(spData)
+library(spDataLarge)
+```
+
+
+```{r datos , warning=FALSE, message=FALSE}
+# Lectura de una capa vectorial (GeoJSON) de división distrial de Santa Ana
+limite_distrital <-
+  st_read(
+    "https://dvictoria2020.github.io/Proyecto1-R/limite_distrital.geojson",
+    quiet = TRUE
+  )
+# Transformación del CRS del objeto división distrital
+limite_distrital <-
+  limite_distrital %>%
+  st_transform(4326)
+
+
+# Lectura de una capa vectorial (GeoJSON) patentes de Santa Ana
+patentesST <-
+  st_read("https://dvictoria2020.github.io/tarea3-tablero-shiny/patentesST.geojson",
+          quiet = TRUE
+  )
+
+# Transformación del CRS del objeto patentes
+patentesST <-
+  patentesST %>%
+  st_transform(4326)
+
+# Lectura de una capa vectorial (GeoJSON) red vial de Santa Ana
+red_vial <-
+  st_read("https://dvictoria2020.github.io/tarea3-tablero-shiny/red_vial.geojson",
+          quiet = TRUE
+  )
+
+# Transformación del CRS del objeto patentes
+red_vial <-
+  red_vial %>%
+  st_transform(4326)
+
+
+# Lectura de archivo CSV de patentes comerciales en Santa Ana
+Patente_final <-
+  st_read(
+    "/vsicurl/https://dvictoria2020.github.io/Proyecto1-R/Patente_final.csv",
+    options = c(
+      "X_POSSIBLE_NAMES=Latitud",
+      "Y_POSSIBLE_NAMES=Longitud"
+    ),
+    quiet = TRUE
+  )
+# Asignación de un CRS al objeto patentes
+st_crs(Patente_final) <- 4326
+
+# Lista ordenada de actividad + "Todas"
+lista_actividad <- unique(patentesST$Actividad)
+lista_actividad <- sort(lista_actividad)
+lista_actividad <- c("Todas", lista_actividad)
+
+# Lista ordenada de distritos + "Todos"
+lista_distritos <- unique(patentesST$Distrito)
+lista_distritos <- sort(lista_distritos)
+lista_distritos <- c("Todos", lista_distritos)
+
+```
+
+Mapa
+=====================================
+
+Column {.sidebar}
+-----------------------------------------------------------------------
+```{r}
+
+h3("Filtros")
+
+h2("Actividad")
+selectInput(
+  inputId = "Actividad",
+  label = "Actividad Comercial",
+  choices = lista_actividad,
+  selected = "Todas"
+)
+
+h2("Distritos")
+selectInput(
+  inputId = "Distrito",
+  label = "Distrito",
+  choices = lista_distritos,
+  selected = "Todos"
+)
+
+filtrarRegistros <- reactive({
+  # Remoción de geometrías y selección de columnas
+  patente_filtrada <-
+    patentesST %>%
+    dplyr::select(Nombre_comercio,
+                  Aprobacion,
+                  Actividad,
+                  Tipo_persona,
+                  Distrito)
+  
+  
+  # Filtrado de actividad
+  if (input$Actividad != "Todas") {
+    patente_filtrada <-
+      patentesST %>%
+      filter(Actividad == input$Actividad)
+  }
+  
+  
+  # Filtrado de actividad por distrito
+  if (input$Distrito != "Todos") {
+    patente_filtrada <-
+      patente_filtrada %>%
+      filter(Distrito == input$Distrito)
+  }
+  
+  return(patente_filtrada)
+  
+})
+```  
+
+Column {data-width=450}
+-----------------------------------------------------------------------
+
+
+### Mapa
+
+
+```{r}
+renderLeaflet({
+    registros <-
+      filtrarRegistros()
+    
+# Mapa Leaflet con capas de distitos, red vial y actividades comerciales en Santa Ana
+    
+    leaflet() %>%
+      addTiles(options = providerTileOptions(noWrap = TRUE), group = "Open Street Maps") %>%
+      addProviderTiles("Esri.WorldImagery", group = "Imagen Satelital") %>%
+      addPolygons(
+        data = limite_distrital,
+        color = "purple",
+        fillColor = "transparent",
+        stroke = TRUE,
+        weight = 2.0,
+        group = "Limite distrital"
+      ) %>%
+      addPolylines(
+        data = red_vial,
+        color = "black",
+        stroke = TRUE,
+        weight = 2.0,
+        group = "Red vial nacional"
+      ) %>%
+      addCircleMarkers(
+        data = registros,
+        stroke = FALSE,
+        radius = 3,
+        fillColor = 'green',
+        fillOpacity = 1,
+        group = "Patentes comerciales",
+        popup = paste0(
+          "<strong>Distrito: </strong>",
+          registros$Distrito,
+          "<br>",
+          "<strong>Actividad Comercial: </strong>",
+          registros$Actividad
+        )
+        
+      ) %>%
+      addControlGPS() %>%
+      addSearchOSM() %>%
+      addResetMapButton() %>%
+      addMouseCoordinates() %>%
+      addMiniMap(tiles = providers$OpenStreetMap,
+                 toggleDisplay = TRUE) %>%
+      addScaleBar("bottomright") %>%
+      addLayersControl(
+        baseGroups = c("Open Street Maps", "Imagen Satelital"),
+        overlayGroups = c("Patentes comerciales", "Limite distrital", "Red vial nacional"),
+        options = layersControlOptions(collapsed = FALSE)
+      )    
+
+})
+
+```
+Tabla
+===================================== 
+
+Column {data-width=450}
+-----------------------------------------------------------------------
+
+### Registros de patentes comerciales
+
+```{r}
+renderDT({
+  registros <- filtrarRegistros()
+  
+  registros %>%
+    st_drop_geometry() %>%
+    select(Actividad,
+                  Nombre_comercio,
+                  Tipo_persona,
+                  Distrito) %>%
+    datatable(options = list(
+        language = list(url = '//cdn.datatables.net/plug-ins/1.11.3/i18n/es_es.json'),
+        pageLength = 8))
+  })
+```
+
+Gráfico {data-orientation=rows}
+ 
+
+Row {data-width=350}
+-----------------------------------------------------------------------
+
+### Actividades comerciales en Santa ANA
+
+```{r}
+renderPlot({
+    # Preparación de los datos  
+    registros <- filtrarRegistros()
+    Actividad <-
+      registros %>%
+      st_drop_geometry() %>%
+      select(Actividad) %>%
+      rename(Actividad = Actividad) %>%
+      group_by(Actividad) %>%
+      summarise(suma = n()) %>%
+      filter(suma > 0)
+    
+    
+    ggplot(Actividad, aes(x = reorder(Actividad, -suma),y = suma)) +
+      geom_col(colour = "#FF4040", fill = "#7FFFD4",width = 0.6) +
+      geom_text(aes(label = suma), vjust = 1, colour = "black") +
+      ggtitle("Actividades comerciales en Santa Ana") +
+      theme(plot.title = element_text(hjust = 1),
+            axis.text.x = element_text(angle = 25,hjust = 1, vjust = 1)
+      ) +
+      xlab("Actividades") +
+      ylab("Cantidad")
+})
+
+```
+
+Centroide {data-orientation=rows}
+===================================== 
+
+
+### Santa Ana
+
+Santa Ana es el distrito primero y ciudad cabecera del cantón de Santa Ana, en la provincia de San José, de Costa Rica.Se caracteriza por ser parte del Gran Área Metropolitana  y  por el alto poder adquisitivo de su población y su alto índice de desarrollo urbanístico y comercial. 
+
+Se ubica en el este del cantón y limita al norte con el distrito de Pozos, al este con el cantón de Escazú, al oeste con el distrito de Uruca, y al sur limita con el distrito de Salitral.
+
+
+Fundado en 1907, el cantón se caracteriza por ofrecer a sus habitantes y visitantes un ambiente relajado y de modernas comodidades en cuanto a hospedaje, vivienda, gastronomía, recreación y entretenimiento. Además de ello, se ha colocado como uno de los cantones con mejor calidad de vida y de mayor estabilidad económica y social en el país
+
+El cantón de Santa Ana cuenta con relieves planos y otros más montañosos. El distrito de Pozos, en donde confluyen los ríos Virilla y Uruca, es un valle con relieve plano ondulado protegido por los cerros de Escazú al sur y la Loma del Alto de las Palomas al este, en el cual está evidenciada la existencia de fuentes termo-minerales. Las condiciones favorables de la región, rica en fuentes y manantiales de agua, fueron factores determinantes para que se ubicaran en este lugar los poblados de La Lindora al oeste y Honduras al este. De ahí la procedencia del nombre de “Pozos”. 
+
+Vista de un deslizamiento en el Cerro Chitaría, en 2010.
+Otras cimas de importancia son; el cerro Pico Blanco, a 2 271 m.s.n.m., el cerro Tacuotari, a 2 100 m.s.n.m., el cerro Bandera, a 1 856 m.s.n.m, el cerro Pacacua, a 1 600 m.s.n.m., y el Alto Caña Quemada, a 1 813 n.s.n.m.
+
+
+ Su cabecera es el distrito de Santa Ana, con categoría de ciudad, y cuenta con un total de seis distritos: Santa Ana, Salitral, Pozos, Uruca, Piedades y Brasil. En el siguiente mapa se puede apreciar el punto central **(centroide)** de cada uno de sus distritos.
+ 
+
+-----------------------------------------------------------------------
+Row 
+-----------------------------------------------------------------------
+
+
+```{r}
+# Provincias de Costa Rica y sus centroides calculados con st_centroid() y st_point_on_surface()
+plot(
+  limite_distrital$geometry,
+  main = "Centroides de los distritos de Santa Ana",
+  axes = TRUE,
+  graticule = TRUE)
+
+plot(st_centroid(limite_distrital),
+     add = TRUE,
+     pch = 16,
+     col = "red")
+
+```
+
+
+Row 
+-----------------------------------------------------------------------
+
+
+
+
+El cantón cuenta con una extensión territorial de 61,42 km², colocándose como el doceavo más extenso de la provincia.
+
+
+
+El cantón tiene una elevación media de 904 metros sobre el nivel de mar (m.s.n.m.). Las elevaciones sobre el nivel del mar, del centro urbano de los poblados de distritos del cantón, son las siguientes: Santa Ana, a 904 m.s.n.m., Salitral, a 1 022 m.s.n.m., Pozos, a 847 m.s.n.m., Uruca, a 873 m.s.n.m., Piedades, a 899 m.s.n.m., y Brasil, a 878 m.s.n.m. El punto más alto del cantón se ubica en el extremo sur del cantón, en el distrito de Salitral, y cerca de la cima del cerro Cedral, y se encuentra a aproximadamente 2 358 m.s.n.m.
+
+
+Column {data-width=450}
+-----------------------------------------------------------------------
+
+
+```{r}
+# Unión de distritos
+
+canton_sa <-
+  limite_distrital %>%
+  filter(canton == "Santa Ana")
+  
+distritos_sa_unifi <-
+  st_union(canton_sa)
+
+plot (
+  distritos_sa_unifi,
+  main = "Canton Santa Ana total", 
+  axes = TRUE,
+  graticule = TRUE)
+
+```
+
+
+
+Buffer {data-orientation=rows}
+===================================== 
+
+
+### Santa Ana
+
+```{r}
+  
+  
+```
+
+
+
+
+
+
+
+

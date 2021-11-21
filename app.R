@@ -5,7 +5,6 @@ library(shinydashboard)
 library(shinyWidgets)
 library(dplyr)
 library(sf)
-library(terra)
 library(raster)
 library(rgdal)
 library(DT)
@@ -16,6 +15,10 @@ library(leafem)
 library(ggplot2)
 library(graphics)
 library(tidyverse)
+library(rmapshaper)
+library(spDataLarge)
+library(spData)
+library(utf8)
 
 # Lectura de una capa vectorial (GeoJSON) de división distrial de Santa Ana
 limite_distrital <-
@@ -28,6 +31,10 @@ limite_distrital <-
   limite_distrital %>%
   st_transform(4326)
 
+limite_distrital <-
+st_centroid(limite_distrital
+  )
+
 
 # Lectura de una capa vectorial (GeoJSON) patentes de Santa Ana
 patentesST <-
@@ -39,6 +46,18 @@ patentesST <-
 patentesST <-
   patentesST %>%
   st_transform(4326)
+
+# Lectura de una capa vectorial (GeoJSON) red vial de Santa Ana
+red_vial <-
+  st_read("https://dvictoria2020.github.io/tarea3-tablero-shiny/red_vial.geojson",
+          quiet = TRUE
+  )
+
+# Transformación del CRS del objeto patentes
+red_vial <-
+  red_vial %>%
+  st_transform(4326)
+
 
 # Lectura de archivo CSV de patentes comerciales en Santa Ana
 Patente_final <-
@@ -53,11 +72,7 @@ Patente_final <-
 # Asignación de un CRS al objeto patentes
 st_crs(Patente_final) <- 4326
 
-# Lectura de capa raster de uso urbano
-uso_urbano_rWGS <-
-  rast(
-    "/vsicurl/https://dvictoria2020.github.io/Proyecto1-R/uso_urbano_rWGS.tif",
-  )
+
 
 
 # Lista ordenada de actividad + "Todas"
@@ -93,27 +108,38 @@ ui <-
         startExpanded = TRUE
       )
     )),
-    dashboardBody(fluidRow(
-      box(
-        title = "Mapa distribución de patentes comerciales en Santa Ana",
-        leafletOutput(outputId = "mapa"),
-        width = 6
-      ),    
-      box(
-        title = "Registros de patentes comerciales", 
-        DTOutput(outputId = "tabla"),
-        width = 6
+    dashboardBody(
+      tabItems(
+        tabItem("dashboard",
+                fluidRow(
+                  valueBoxOutput("rate"),
+                  valueBoxOutput("count"),
+                  valueBoxOutput("users")
+                ))
+        ),
+  
+      fluidRow(
+        box(
+          title = "Mapa distribución de patentes comerciales en Santa Ana",
+          leafletOutput(outputId = "mapa"),
+          width = 6
+        ),    
+        box(
+          title = "Registros de patentes comerciales", 
+          DTOutput(outputId = "tabla"),
+          width = 6
+        )
+      ),
+      
+      fluidRow(
+        box(
+          title = "Grafico",
+          plotOutput(outputId = "grafico"),
+          width = 12
+        )
       )
-    ),
-    
-    fluidRow(
-      box(
-        title = "Grafico",
-        plotOutput(outputId = "grafico"),
-        width = 12
       )
-    ))
-  )
+    )
 server <- function(input, output, session) {
   filtrarRegistros <- reactive({
     # Remoción de geometrías y selección de columnas
@@ -158,8 +184,6 @@ server <- function(input, output, session) {
     registros <-
       filtrarRegistros()
     
-    uso_urbano_rWGS_rl <- raster::raster(uso_urbano_rWGS)
-    
     
     # Mapa Leaflet con capas de provincias y registros de presencia de felinos
     leaflet() %>%
@@ -173,12 +197,13 @@ server <- function(input, output, session) {
         weight = 2.0,
         group = "Limite distrital"
       ) %>% 
-      addRasterImage(
-        uso_urbano_rWGS_rl,
-        color= "#DDB892",
-        opacity = 0.6,
-        group = "Uso Urbano 2005"
-      )%>%
+      addPolylines(
+        data = red_vial,
+        color = "black",
+        stroke = TRUE,
+        weight = 2.0,
+        group = "Red vial nacional"
+      ) %>%
       addCircleMarkers(
         data = registros,
         stroke = FALSE,
@@ -191,14 +216,8 @@ server <- function(input, output, session) {
           registros$Distrito,
           "<br>",
           "<strong>Actividad Comercial: </strong>",
-          registros$Actividad),
-        label = paste0(
-          "Actividad: ", registros$Actividad,
-          ",",
-          "Distrito: ", registros$Distrito,
-          ", ",
-          "Fecha de aprobación:", registros$Aprobacion
-        )
+          registros$Actividad)
+        
       ) %>% 
       addSearchOSM() %>%
       addResetMapButton() %>%
@@ -207,7 +226,7 @@ server <- function(input, output, session) {
                  toggleDisplay = TRUE) %>%
       addLayersControl(
         baseGroups = c("Open Street Maps", "Imagen Satelital"),
-        overlayGroups = c("Patentes comerciales","Uso Urbano 2005", "Limite distrital" ),
+        overlayGroups = c("Patentes comerciales", "Limite distrital", "Red vial nacional" ),
         options = layersControlOptions(collapsed = FALSE
         )
       )
@@ -239,6 +258,91 @@ server <- function(input, output, session) {
   })
   
 }
+
+
+# Pestaña 2
+
+
+# Provincias de Costa Rica y sus centroides calculados con st_centroid() y st_point_on_surface()
+plot(
+  limite_distrital$geometry,
+  main = "Centroides de provincias: st_centroid (rojo) y st_point_on_surface (verde)",
+  axes = TRUE,
+  graticule = TRUE)
+
+plot(st_centroid(limite_distrital),
+     add = TRUE,
+     pch = 16,
+     col = "red")
+
+
+
+
+# Buffer que rodea la ruta 121
+plot(
+  st_buffer(st_union(ruta_121), 200),
+  main = "Buffer que rodea la ruta 121",
+  axes = TRUE,
+  graticule = TRUE)
+
+plot(
+  ruta_121$geometry,
+  col = "blue",
+  add = TRUE
+)
+
+
+
+patentesST <-
+  patentesST %>%
+  
+buffer_ruta_121 <-
+  ruta_121 %>%
+st_buffer(dist = 200)
+
+patentesST_buffer_ruta_121 <-
+  st_join(patentesST, buffer_ruta_121)
+  
+  
+  
+# Filtro
+ruta_121 <-
+  red_vial %>%
+  filter(num_utgv == "RN121")
+
+
+
+
+  
+patentesST_buffer_ruta_121 <-
+  st_join(patentesST, )
+  ruta_121 %>%
+  st_buffer(dist = 200)
+
+
+patentesST_buffer_ruta121 <-
+  st_join(patentesST, buffer_ruta_121) %>%
+
+  
+  
+  # Buffer que rodea la ruta 121
+  plot(
+    st_buffer(st_union(ruta_121), 200),
+    main = "Buffer que rodea la ruta 121",
+    axes = TRUE,
+    graticule = TRUE)
+
+plot(
+  ruta_121$geometry,
+  col = "blue",
+  add = TRUE
+)
+
+
+
+
+
+
 
 # Llamado a la función shinyApp()
 
