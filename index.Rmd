@@ -25,7 +25,6 @@ library(shinydashboard)
 library(shinyWidgets)
 library(rgdal)
 library(tidyverse)
-library(rmapshaper)
 library(spData)
 library(spDataLarge)
 ```
@@ -160,6 +159,7 @@ renderLeaflet({
     registros <-
       filtrarRegistros()
     
+    
 # Mapa Leaflet con capas de distitos, red vial y actividades comerciales en Santa Ana
     
     leaflet() %>%
@@ -167,7 +167,7 @@ renderLeaflet({
       addProviderTiles("Esri.WorldImagery", group = "Imagen Satelital") %>%
       addPolygons(
         data = limite_distrital,
-        color = "purple",
+        color = "#CD8500",
         fillColor = "transparent",
         stroke = TRUE,
         weight = 2.0,
@@ -175,9 +175,9 @@ renderLeaflet({
       ) %>%
       addPolylines(
         data = red_vial,
-        color = "black",
+        color = "#4D4D4D",
         stroke = TRUE,
-        weight = 2.0,
+        weight = 3.0,
         group = "Red vial nacional"
       ) %>%
       addCircleMarkers(
@@ -194,7 +194,6 @@ renderLeaflet({
           "<strong>Actividad Comercial: </strong>",
           registros$Actividad
         )
-        
       ) %>%
       addControlGPS() %>%
       addSearchOSM() %>%
@@ -271,9 +270,13 @@ renderPlot({
 
 ```
 
+
+
+
 Centroide {data-orientation=rows}
 ===================================== 
-
+Column {data-width=450}
+-----------------------------------------------------------------------
 
 ### Santa Ana
 
@@ -290,62 +293,121 @@ Vista de un deslizamiento en el Cerro Chitaría, en 2010.
 Otras cimas de importancia son; el cerro Pico Blanco, a 2 271 m.s.n.m., el cerro Tacuotari, a 2 100 m.s.n.m., el cerro Bandera, a 1 856 m.s.n.m, el cerro Pacacua, a 1 600 m.s.n.m., y el Alto Caña Quemada, a 1 813 n.s.n.m.
 
 
- Su cabecera es el distrito de Santa Ana, con categoría de ciudad, y cuenta con un total de seis distritos: Santa Ana, Salitral, Pozos, Uruca, Piedades y Brasil. En el siguiente mapa se puede apreciar el punto central **(centroide)** de cada uno de sus distritos.
+Su cabecera es el distrito de Santa Ana, con categoría de ciudad, y cuenta con un total de seis distritos: Santa Ana, Salitral, Pozos, Uruca, Piedades y Brasil. En el siguiente mapa se puede apreciar el punto central **(centroide)** de cada uno de sus distritos.
  
 
------------------------------------------------------------------------
-Row 
------------------------------------------------------------------------
+
+### Mapa
+
 
 
 ```{r}
-# Provincias de Costa Rica y sus centroides calculados con st_centroid() y st_point_on_surface()
-plot(
-  limite_distrital$geometry,
-  main = "Centroides de los distritos de Santa Ana",
-  axes = TRUE,
-  graticule = TRUE)
+# Mapa 2 con los centroides calculados
 
-plot(st_centroid(limite_distrital),
-     add = TRUE,
-     pch = 16,
-     col = "red")
+renderLeaflet({
+
+    
+limite_distrital_centroide <-
+  st_point_on_surface(limite_distrital)
+    
+# Mapa Leaflet con capas de distitos, red vial y actividades comerciales en Santa Ana
+    
+    leaflet() %>%
+      addProviderTiles(providers$CartoDB, group = "Mapa base") %>%
+      addProviderTiles(providers$Esri.WorldImagery, group = "Imagen Satelital") %>%
+      addPolygons(
+        data = limite_distrital,
+        color = "#8B3E2F",
+        stroke = TRUE,
+        weight = 3.0,
+        group = "Limite distrital"
+      ) %>%
+      addCircleMarkers(
+        data = limite_distrital_centroide,
+        stroke = TRUE,
+        radius = 8,
+        fillColor = '#8B1A1A',
+        group = "Centroide distritos",
+                popup = paste0(
+        "<strong>Distrito: </strong>",
+        limite_distrital$distrito)
+      ) %>%
+      addControlGPS() %>%
+      addSearchOSM() %>%
+      addResetMapButton() %>%
+      addMouseCoordinates() %>%
+      addMiniMap(tiles = providers$OpenStreetMap,
+                 toggleDisplay = TRUE) %>%
+      addScaleBar("bottomright") %>%
+      addLayersControl(
+        baseGroups = c("Mapa base", "Imagen Satelital"),
+        overlayGroups = c("Limite distrital", "Centroide distritos"),
+        options = layersControlOptions(collapsed = FALSE)
+      )    
+
+})
 
 ```
 
 
-Row 
------------------------------------------------------------------------
-
-
-
-
-El cantón cuenta con una extensión territorial de 61,42 km², colocándose como el doceavo más extenso de la provincia.
-
-
-
-El cantón tiene una elevación media de 904 metros sobre el nivel de mar (m.s.n.m.). Las elevaciones sobre el nivel del mar, del centro urbano de los poblados de distritos del cantón, son las siguientes: Santa Ana, a 904 m.s.n.m., Salitral, a 1 022 m.s.n.m., Pozos, a 847 m.s.n.m., Uruca, a 873 m.s.n.m., Piedades, a 899 m.s.n.m., y Brasil, a 878 m.s.n.m. El punto más alto del cantón se ubica en el extremo sur del cantón, en el distrito de Salitral, y cerca de la cima del cerro Cedral, y se encuentra a aproximadamente 2 358 m.s.n.m.
-
-
+Unión de distritos {data-orientation=rows}
+===================================== 
 Column {data-width=450}
 -----------------------------------------------------------------------
+
+### Extensión
+
+
+El cantón cuenta con una extensión territorial de 61,42 km², colocándose como el doceavo más extenso de la provincia. El cantón tiene una elevación media de 904 metros sobre el nivel de mar (m.s.n.m.). Las elevaciones sobre el nivel del mar, del centro urbano de los poblados de distritos del cantón, son las siguientes: Santa Ana, a 904 m.s.n.m., Salitral, a 1 022 m.s.n.m., Pozos, a 847 m.s.n.m., Uruca, a 873 m.s.n.m., Piedades, a 899 m.s.n.m., y Brasil, a 878 m.s.n.m. El punto más alto del cantón se ubica en el extremo sur del cantón, en el distrito de Salitral, y cerca de la cima del cerro Cedral, y se encuentra a aproximadamente 2 358 m.s.n.m.
 
 
 ```{r}
 # Unión de distritos
 
+
+renderLeaflet({
+  
 canton_sa <-
   limite_distrital %>%
   filter(canton == "Santa Ana")
   
 distritos_sa_unifi <-
-  st_union(canton_sa)
+  st_union(canton_sa)  
 
-plot (
-  distritos_sa_unifi,
-  main = "Canton Santa Ana total", 
-  axes = TRUE,
-  graticule = TRUE)
+    
+# Mapa Leaflet con capas de distitos, red vial y actividades comerciales en Santa Ana
+    
+    leaflet() %>%
+      addProviderTiles(providers$CartoDB.DarkMatter, group = "Mapa base") %>%
+      addProviderTiles(providers$Esri.WorldImagery, group = "Imagen Satelital") %>%
+      addPolygons(
+        data = limite_distrital,
+        color = "#8B3E2F",
+        stroke = TRUE,
+        weight = 3.0,
+        group = "Limite distrital"
+      ) %>%
+      addPolygons(
+        data = distritos_sa_unifi,
+        color = "#8B3E2F",
+        stroke = TRUE,
+        weight = 3.0,
+        group = "Distritos unidos"
+      ) %>%
+      addControlGPS() %>%
+      addSearchOSM() %>%
+      addResetMapButton() %>%
+      addMouseCoordinates() %>%
+      addMiniMap(tiles = providers$OpenStreetMap,
+                 toggleDisplay = TRUE) %>%
+      addScaleBar("bottomright") %>%
+      addLayersControl(
+        baseGroups = c("Mapa base", "Imagen Satelital"),
+        overlayGroups = c("Limite distrital", "Distritos unidos"),
+        options = layersControlOptions(collapsed = FALSE)
+      )    
+
+})
 
 ```
 
@@ -358,11 +420,71 @@ Buffer {data-orientation=rows}
 ### Santa Ana
 
 ```{r}
+ renderLeaflet({
   
+canton_sa <-
+  limite_distrital %>%
+  filter(canton == "Santa Ana")
+  
+distritos_sa_unifi <-
+  st_union(canton_sa)  
+
+    
+# Mapa Leaflet con capas de distitos, red vial y actividades comerciales en Santa Ana
+    
+    leaflet() %>%
+      addProviderTiles(providers$CartoDB, group = "Mapa base") %>%
+      addProviderTiles(providers$Esri.WorldImagery, group = "Imagen Satelital") %>%
+      addPolygons(
+        data = limite_distrital,
+        color = "#8B3E2F",
+        stroke = TRUE,
+        weight = 3.0,
+        group = "Limite distrital"
+      ) %>%
+      addPolygons(
+        data = distritos_sa_unifi,
+        color = "#8B3E2F",
+        stroke = TRUE,
+        weight = 3.0,
+        group = "Distritos unidos"
+      ) %>%
+      addControlGPS() %>%
+      addSearchOSM() %>%
+      addResetMapButton() %>%
+      addMouseCoordinates() %>%
+      addMiniMap(tiles = providers$OpenStreetMap,
+                 toggleDisplay = TRUE) %>%
+      addScaleBar("bottomright") %>%
+      addLayersControl(
+        baseGroups = c("Mapa base", "Imagen Satelital"),
+        overlayGroups = c("Limite distrital", "Distritos unidos"),
+        options = layersControlOptions(collapsed = FALSE)
+      )    
+
+}) 
   
 ```
 
 
+
+
+
+
+```{r Buffer en ruta 121 cantón Santa Ana}
+
+#Filtrar ruta 121
+ 
+ruta_121 <-
+  red_vial %>%
+  filter(num_utgv == "RN121")
+
+
+
+plot(ruta_121$geometry)
+       add = TRUE,
+       pch = 16,
+       col = "red")
 
 
 
