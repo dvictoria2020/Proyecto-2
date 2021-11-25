@@ -1,9 +1,8 @@
 ---
-title: "Patentes de Santa Ana"
+title: "Licencias comerciales en el cantón Santa Ana"
 output: 
   flexdashboard::flex_dashboard:
-    theme: cerulean
-    social: menu
+    theme: spacelab
     source_code: embed
 runtime: shiny
 ---
@@ -270,31 +269,28 @@ renderPlot({
 
 ```
 
-
-
-
-Centroide {data-orientation=rows}
+Centralidad distrital {data-orientation=rows}
 ===================================== 
 Column {data-width=450}
 -----------------------------------------------------------------------
 
-### Santa Ana
+### Generalidades del cantón Santa Ana
 
-Santa Ana es el distrito primero y ciudad cabecera del cantón de Santa Ana, en la provincia de San José, de Costa Rica.Se caracteriza por ser parte del Gran Área Metropolitana  y  por el alto poder adquisitivo de su población y su alto índice de desarrollo urbanístico y comercial. 
+Santa Ana es el distrito primero y a la vez es la ciudad cabecera del cantón 09 Santa Ana de la provincia 01 San José, Costa Rica. Se caracteriza por ser parte del Gran Área Metropolitana (GAM)  y  por el alto poder adquisitivo de su población y su alto índice de desarrollo urbanístico y comercial.
 
-Se ubica en el este del cantón y limita al norte con el distrito de Pozos, al este con el cantón de Escazú, al oeste con el distrito de Uruca, y al sur limita con el distrito de Salitral.
-
-
-Fundado en 1907, el cantón se caracteriza por ofrecer a sus habitantes y visitantes un ambiente relajado y de modernas comodidades en cuanto a hospedaje, vivienda, gastronomía, recreación y entretenimiento. Además de ello, se ha colocado como uno de los cantones con mejor calidad de vida y de mayor estabilidad económica y social en el país
-
-El cantón de Santa Ana cuenta con relieves planos y otros más montañosos. El distrito de Pozos, en donde confluyen los ríos Virilla y Uruca, es un valle con relieve plano ondulado protegido por los cerros de Escazú al sur y la Loma del Alto de las Palomas al este, en el cual está evidenciada la existencia de fuentes termo-minerales. Las condiciones favorables de la región, rica en fuentes y manantiales de agua, fueron factores determinantes para que se ubicaran en este lugar los poblados de La Lindora al oeste y Honduras al este. De ahí la procedencia del nombre de “Pozos”. 
-
-Vista de un deslizamiento en el Cerro Chitaría, en 2010.
-Otras cimas de importancia son; el cerro Pico Blanco, a 2 271 m.s.n.m., el cerro Tacuotari, a 2 100 m.s.n.m., el cerro Bandera, a 1 856 m.s.n.m, el cerro Pacacua, a 1 600 m.s.n.m., y el Alto Caña Quemada, a 1 813 n.s.n.m.
+Se ubica en el este del cantón y limita al norte con el distrito de Pozos, al este con el cantón de Escazú, al oeste con el distrito de Uruca y al sur con el distrito de Salitral.
 
 
-Su cabecera es el distrito de Santa Ana, con categoría de ciudad, y cuenta con un total de seis distritos: Santa Ana, Salitral, Pozos, Uruca, Piedades y Brasil. En el siguiente mapa se puede apreciar el punto central **(centroide)** de cada uno de sus distritos.
- 
+Santa Ana fue fundado en 1907, el cantón ofrece a sus habitantes y visitantes un ambiente relajado y de modernas comodidades en cuanto a hospedaje, vivienda, gastronomía, recreación y entretenimiento. Además, se ha colocado como uno de los cantones con mejor calidad de vida y con mayor estabilidad económica y social en el país.
+
+El cantón Santa Ana cuenta con relieves planos y otros más montañosos. El distrito Pozos confluyen los ríos Virilla y Uruca, es un valle con relieve plano ondulado protegido por los cerros de Escazú al sur y la Loma del Alto de las Palomas al este, en el cual está evidenciada la existencia de fuentes termo-minerales. Las condiciones favorables de la región rica en fuentes y manantiales de agua (de ahí la procedencia del nombre de “Pozos”) fueron factores determinantes para que se ubican los poblados de La Lindora al oeste y Honduras al este.
+
+Algunas de las cimas de importancia son: el cerro Pico Blanco, a 2 271 m.s.n.m., el cerro Tacuotari, a 2 100 m.s.n.m., el cerro Bandera, a 1 856 m.s.n.m, el cerro Pacacua, a 1 600 m.s.n.m., y el Alto Caña Quemada, a 1 813 n.s.n.m.
+
+El cantón cuenta con una extensión territorial de 61,42 km², colocándose como el doceavo más extenso de la provincia. El cantón tiene una elevación media de 904 metros sobre el nivel de mar (m.s.n.m.). Las elevaciones sobre el nivel del mar, del centro urbano de los poblados de distritos del cantón, son las siguientes: Santa Ana, a 904 m.s.n.m., Salitral, a 1 022 m.s.n.m., Pozos, a 847 m.s.n.m., Uruca, a 873 m.s.n.m., Piedades, a 899 m.s.n.m., y Brasil, a 878 m.s.n.m. El punto más alto del cantón se ubica en el extremo sur del cantón, en el distrito de Salitral, y cerca de la cima del cerro Cedral, y se encuentra a aproximadamente 2 358 m.s.n.m.
+
+El distrito de Santa Ana es cabecera de distrito y tiene categoría de ciudad, se encuentra conformado por seis distritos: Santa Ana, Salitral, Pozos, Uruca, Piedades y Brasil. En el siguiente mapa se puede apreciar el punto central **(centroide)** de cada uno de sus distritos:
+
 
 
 ### Mapa
@@ -308,7 +304,12 @@ renderLeaflet({
 
     
 limite_distrital_centroide <-
-  st_point_on_surface(limite_distrital)
+  st_centroid(limite_distrital)
+
+distrito_sa <-
+  limite_distrital %>%
+  filter(distrito == "Santa Ana")
+
     
 # Mapa Leaflet con capas de distitos, red vial y actividades comerciales en Santa Ana
     
@@ -344,134 +345,30 @@ limite_distrital_centroide <-
         overlayGroups = c("Limite distrital", "Centroide distritos"),
         options = layersControlOptions(collapsed = FALSE)
       )    
-
 })
 
 ```
 
 
-Unión de distritos {data-orientation=rows}
+Area de influencia {data-orientation=rows}
 ===================================== 
 Column {data-width=450}
 -----------------------------------------------------------------------
 
-### Extensión
+### Actividades económicas en cercanía de rutas nacionales
 
 
-El cantón cuenta con una extensión territorial de 61,42 km², colocándose como el doceavo más extenso de la provincia. El cantón tiene una elevación media de 904 metros sobre el nivel de mar (m.s.n.m.). Las elevaciones sobre el nivel del mar, del centro urbano de los poblados de distritos del cantón, son las siguientes: Santa Ana, a 904 m.s.n.m., Salitral, a 1 022 m.s.n.m., Pozos, a 847 m.s.n.m., Uruca, a 873 m.s.n.m., Piedades, a 899 m.s.n.m., y Brasil, a 878 m.s.n.m. El punto más alto del cantón se ubica en el extremo sur del cantón, en el distrito de Salitral, y cerca de la cima del cerro Cedral, y se encuentra a aproximadamente 2 358 m.s.n.m.
+En los últimos años, Santa Ana ha crecido en términos comerciales, en la actualidad es posible encontrar diferentes tipos de actividades económicas como lo son una gran amplia oferta gastronómica, cines, tiendas de ropa, electrodomésticos, supermercados, clínicas, hospitales, bancos públicos y privados, entre otros distribuidas en los seis distritos que conforman en cantón.
 
+Esta gran variedad de actividades económicas beneficia la generación de fuentes de empleo para sus habitantes y los de los cantones vecinos. La mayor parte de las actividades económicas se concentran en los distritos Pozos y Santa Ana a lo largo o en los alrededores de las rutas nacionales que atraviesan el cantón.
 
-```{r}
-# Unión de distritos
+Un ejemplo de ello, son los centros educativos que buscan ubicaciones estratégicas como lo es la cercanías a las principales rutas nacionales debido a su fácil acceso y su conexión con otras rutas cantonales.
 
+En el siguiente mapa se pueden apreciar los centros educativos que se ubican en un radio de 400 metros de la ruta nacional n°121:
 
-renderLeaflet({
-  
-canton_sa <-
-  limite_distrital %>%
-  filter(canton == "Santa Ana")
-  
-distritos_sa_unifi <-
-  st_union(canton_sa)  
-
-    
-# Mapa Leaflet con capas de distitos, red vial y actividades comerciales en Santa Ana
-    
-    leaflet() %>%
-      addProviderTiles(providers$CartoDB.DarkMatter, group = "Mapa base") %>%
-      addProviderTiles(providers$Esri.WorldImagery, group = "Imagen Satelital") %>%
-      addPolygons(
-        data = limite_distrital,
-        color = "#8B3E2F",
-        stroke = TRUE,
-        weight = 3.0,
-        group = "Limite distrital"
-      ) %>%
-      addPolygons(
-        data = distritos_sa_unifi,
-        color = "#8B3E2F",
-        stroke = TRUE,
-        weight = 3.0,
-        group = "Distritos unidos"
-      ) %>%
-      addControlGPS() %>%
-      addSearchOSM() %>%
-      addResetMapButton() %>%
-      addMouseCoordinates() %>%
-      addMiniMap(tiles = providers$OpenStreetMap,
-                 toggleDisplay = TRUE) %>%
-      addScaleBar("bottomright") %>%
-      addLayersControl(
-        baseGroups = c("Mapa base", "Imagen Satelital"),
-        overlayGroups = c("Limite distrital", "Distritos unidos"),
-        options = layersControlOptions(collapsed = FALSE)
-      )    
-
-})
-
-```
-
-
-
-Buffer {data-orientation=rows}
-===================================== 
-
-
-### Santa Ana
+### Actividades económicas en la Ruta Nacional 121
 
 ```{r}
- renderLeaflet({
-  
-canton_sa <-
-  limite_distrital %>%
-  filter(canton == "Santa Ana")
-  
-distritos_sa_unifi <-
-  st_union(canton_sa)  
-
-    
-# Mapa Leaflet con capas de distitos, red vial y actividades comerciales en Santa Ana
-    
-    leaflet() %>%
-      addProviderTiles(providers$CartoDB, group = "Mapa base") %>%
-      addProviderTiles(providers$Esri.WorldImagery, group = "Imagen Satelital") %>%
-      addPolygons(
-        data = limite_distrital,
-        color = "#8B3E2F",
-        stroke = TRUE,
-        weight = 3.0,
-        group = "Limite distrital"
-      ) %>%
-      addPolygons(
-        data = distritos_sa_unifi,
-        color = "#8B3E2F",
-        stroke = TRUE,
-        weight = 3.0,
-        group = "Distritos unidos"
-      ) %>%
-      addControlGPS() %>%
-      addSearchOSM() %>%
-      addResetMapButton() %>%
-      addMouseCoordinates() %>%
-      addMiniMap(tiles = providers$OpenStreetMap,
-                 toggleDisplay = TRUE) %>%
-      addScaleBar("bottomright") %>%
-      addLayersControl(
-        baseGroups = c("Mapa base", "Imagen Satelital"),
-        overlayGroups = c("Limite distrital", "Distritos unidos"),
-        options = layersControlOptions(collapsed = FALSE)
-      )    
-
-}) 
-  
-```
-
-
-
-
-
-
-```{r Buffer en ruta 121 cantón Santa Ana}
 
 #Filtrar ruta 121
  
@@ -479,12 +376,39 @@ ruta_121 <-
   red_vial %>%
   filter(num_utgv == "RN121")
 
+licencia <-
+  patentesST %>%
+  filter(Actividad == "Educativa")
 
+# Buffer que rodea la ruta 121
 
-plot(ruta_121$geometry)
-       add = TRUE,
-       pch = 16,
-       col = "red")
+buffer_ruta_121 <-
+  ruta_121 %>%
+  st_buffer(dist = 400)
+
+licencia_buffer_ruta_121 <-
+  st_join(licencia, buffer_ruta_121)
+
+plot(
+  st_union(buffer_ruta_121),
+  main = "Centros educativos en ruta nacional 121",
+  axes = TRUE,
+  graticule = TRUE
+)
+
+plot(ruta_121$geometry,
+     col = "turquoise",
+     add = TRUE)
+
+plot(
+  licencia_buffer_ruta_121,
+  pch = 16,
+  col = "purple",
+  add = TRUE
+)
+
+```
+
 
 
 
