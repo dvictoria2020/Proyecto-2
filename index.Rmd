@@ -11,8 +11,6 @@ runtime: shiny
 library(flexdashboard)
 library(dplyr)
 library(sf)
-library(terra)
-library(raster)
 library(DT)
 library(ggplot2)
 library(plotly)
@@ -24,8 +22,6 @@ library(shinydashboard)
 library(shinyWidgets)
 library(rgdal)
 library(tidyverse)
-library(spData)
-library(spDataLarge)
 ```
 
 
@@ -45,14 +41,13 @@ limite_distrital <-
 # Lectura de una capa vectorial (GeoJSON) del cantón Santa Ana
 canton_sa <-
   st_read(
-    "https://dvictoria2020.github.io/Proyecto2-R/canton_sa.geojson",
+    "https://dvictoria2020.github.io/tarea3-tablero-shiny/canton_sa.geojson",
     quiet = TRUE
   )
 # Transformación del CRS del objeto división distrital
 canton_sa <-
   canton_sa %>%
-
-
+  st_transform(4326)
 
 # Lectura de una capa vectorial (GeoJSON) patentes de Santa Ana
 patentesST <-
@@ -67,16 +62,10 @@ patentesST <-
 
 # Lectura de una capa vectorial (GeoJSON) red vial de Santa Ana
 red_vial <-
-  st_read("https://dvictoria2020.github.io/tarea3-tablero-shiny/red_vial.geojson",
-          quiet = TRUE
+  st_read(
+    "https://raw.githubusercontent.com/tpb728O-programaciongeoespacialr/2021ii/main/datos/ign/infraestructura/redvial-simplificadas_500m.geojson",
+    quiet = TRUE
   )
-
-# Transformación del CRS del objeto patentes
-red_vial <-
-  red_vial %>%
-  st_transform(4326)
-
-
 
 # Lectura de archivo CSV de patentes comerciales en Santa Ana
 Patente_final <-
@@ -185,13 +174,6 @@ renderLeaflet({
         weight = 2.0,
         group = "Limite distrital"
       ) %>%
-      addPolylines(
-        data = red_vial,
-        color = "#4D4D4D",
-        stroke = TRUE,
-        weight = 3.0,
-        group = "Red vial nacional"
-      ) %>%
       addCircleMarkers(
         data = registros,
         stroke = FALSE,
@@ -216,7 +198,7 @@ renderLeaflet({
       addScaleBar("bottomright") %>%
       addLayersControl(
         baseGroups = c("Open Street Maps", "Imagen Satelital"),
-        overlayGroups = c("Patentes comerciales", "Limite distrital", "Red vial nacional"),
+        overlayGroups = c("Patentes comerciales", "Limite distrital"),
         options = layersControlOptions(collapsed = FALSE)
       )    
 
@@ -311,7 +293,6 @@ El distrito de Santa Ana es cabecera de distrito y tiene categoría de ciudad, s
 # Mapa 2 con los centroides calculados
 
 renderLeaflet({
-
     
 limite_distrital_centroide <-
   st_centroid(limite_distrital)
@@ -319,7 +300,6 @@ limite_distrital_centroide <-
 distrito_sa <-
   limite_distrital %>%
   filter(distrito == "Santa Ana")
-
     
 # Mapa Leaflet con capas de distitos, red vial y actividades comerciales en Santa Ana
     
@@ -356,7 +336,6 @@ distrito_sa <-
         options = layersControlOptions(collapsed = FALSE)
       )    
 })
-
 ```
 
 
@@ -372,12 +351,13 @@ En los últimos años, Santa Ana ha crecido en términos comerciales, en la actu
 
 Esta gran variedad de actividades económicas beneficia la generación de fuentes de empleo para sus habitantes y los de los cantones vecinos. La mayor parte de las actividades económicas se concentran en los distritos Pozos y Santa Ana a lo largo o en los alrededores de las rutas nacionales que atraviesan el cantón.
 
-Un ejemplo de ello, son los centros educativos que buscan ubicaciones estratégicas como lo es la cercanías a las principales rutas nacionales debido a su fácil acceso y su conexión con otras rutas cantonales.
+De la muestra de patentes utilizadas para este proyecto, en la ruta nacional n°121 se ubican en un radio de 400 metros alrededor de 34 diferentes actividades económicas. 
 
-En el siguiente mapa se pueden apreciar los centros educativos que se ubican en un radio de 400 metros de la ruta nacional n°121:
+La Municipalidad de Santa Ana, en conjunto con el Ministerio de Economía, Industria y Comercio (MEIC) el Plan de Digitalización MIPYME, cuyo objetivo es impulsar a empresas de comercio, servicio e industrias a realizar del comercio digital, ya que los estragos económicos de la pandemia causada por el Covid-19, recayeron principalmente en las pequeñas y medianas empresas, viéndose obligadas a cerrar sus puertas y lanzarse a la búsqueda de nuevos canales de comercialización.
+
+En el siguiente mapa se presentan los comercios que se encuentran en el área de influencia de 400 metros
 
 ### Actividades económicas en la Ruta Nacional 121
-
 
 ```{r}
 # Carga de datos
@@ -385,11 +365,9 @@ En el siguiente mapa se pueden apreciar los centros educativos que se ubican en 
 canton_sa <-
   canton_sa %>%
   st_transform(5367)
-
 ruta121 <-
   red_vial %>%
   filter(num_ruta == "121")
-
 buffer_ruta121 <-
   ruta121 %>%
   st_buffer(dist = 400)
@@ -405,17 +383,78 @@ licencia_buffer_ruta121 <-
 plot(
   st_union(buffer_ruta121),
   main = "Actividades comerciales en la ruta nacional 121",
-  axes = TRUE,
+  axes = FALSE,
   graticule = TRUE
 )
-
 plot (ruta121$geometry, col = "dark orange", add= TRUE)
 plot (licencia_buffer_ruta121, pch = 10, col = "red", add = TRUE)
 plot (canton_sa$geometry, add= TRUE)
 
-
 ```
 
 
+Selección de actividades por distrito {data-orientation=rows}
+===================================== 
+Column {data-width=450}
+-----------------------------------------------------------------------
 
+### Distrito Santa Ana
+
+*Santa Ana* es el distrito primero y ciudad cabecera del cantón de Santa Ana, en la provincia de San José.
+El distrito se caracteriza por ser parte del Gran Área Metropolitana de Costa Rica, y además por el alto poder adquisitivo de su población y su alto índice de desarrollo urbanístico y comercial. Se ubica en el este del cantón y limita al norte con el distrito de Pozos, al este con el cantón de Escazú, al oeste con el distrito de Uruca, y al sur limita con el distrito de Salitral.
+
+
+### Comercios en el distrito Santa Ana
+
+```{r}
+
+# Carga de datos
+
+renderLeaflet({  
+  
+distrito_sant <-
+  limite_distrital %>%
+  filter(distrito == "Santa Ana")
+
+actividad_sa <-
+  patentesST %>%
+  filter(st_within(x = ., y = distrito_sant, sparse = FALSE) )  
+
+    
+# Mapa Leaflet con capas de distitos, red vial y actividades comerciales en Santa Ana
+    
+    leaflet() %>%
+      addProviderTiles(providers$CartoDB, group = "Mapa base") %>%
+      addProviderTiles(providers$Esri.WorldImagery, group = "Imagen Satelital") %>%
+        addPolygons(
+        data = distrito_sant,
+        color = "red",
+        stroke = TRUE,
+        weight = 3.0,
+        group = "Santa Ana"
+      ) %>%
+      addCircleMarkers(
+        data = actividad_sa,
+        stroke = TRUE,
+        radius = 8,
+        fillColor = '#8B1A1A',
+        group = "Actividad",
+                popup = paste0(
+        "<strong>Actividad: </strong>",
+        patentesST$Actividad)
+      ) %>%
+      addControlGPS() %>%
+      addSearchOSM() %>%
+      addResetMapButton() %>%
+      addMouseCoordinates() %>%
+      addMiniMap(tiles = providers$OpenStreetMap,
+                 toggleDisplay = TRUE) %>%
+      addScaleBar("bottomright") %>%
+      addLayersControl(
+        baseGroups = c("Mapa base", "Imagen Satelital"),
+        overlayGroups = c("Limite distrital", "Actividad", "Santa Ana"),
+        options = layersControlOptions(collapsed = FALSE)
+      )    
+})  
+```
 

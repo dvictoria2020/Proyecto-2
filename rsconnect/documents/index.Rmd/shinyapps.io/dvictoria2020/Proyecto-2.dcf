@@ -5,9 +5,9 @@ account: dvictoria2020
 server: shinyapps.io
 hostUrl: https://api.shinyapps.io/v1
 appId: 5172475
-bundleId: 5291166
+bundleId: 5308506
 url: https://dvictoria2020.shinyapps.io/Proyecto-2/
-when: 1637815586.13541
-lastSyncTime: 1637815586.13541
+when: 1638254743.68655
+lastSyncTime: 1638254743.68655
 asMultiple: FALSE
 asStatic: FALSE
