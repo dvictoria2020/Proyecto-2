@@ -42,6 +42,18 @@ limite_distrital <-
   st_transform(4326)
 
 
+# Lectura de una capa vectorial (GeoJSON) del cantón Santa Ana
+canton_sa <-
+  st_read(
+    "https://dvictoria2020.github.io/Proyecto2-R/canton_sa.geojson",
+    quiet = TRUE
+  )
+# Transformación del CRS del objeto división distrital
+canton_sa <-
+  canton_sa %>%
+
+
+
 # Lectura de una capa vectorial (GeoJSON) patentes de Santa Ana
 patentesST <-
   st_read("https://dvictoria2020.github.io/tarea3-tablero-shiny/patentesST.geojson",
@@ -367,7 +379,42 @@ En el siguiente mapa se pueden apreciar los centros educativos que se ubican en 
 ### Actividades económicas en la Ruta Nacional 121
 
 
+```{r}
+# Carga de datos
 
+canton_sa <-
+  canton_sa %>%
+  st_transform(5367)
+
+ruta121 <-
+  red_vial %>%
+  filter(num_ruta == "121")
+
+buffer_ruta121 <-
+  ruta121 %>%
+  st_buffer(dist = 400)
+
+licencia <-
+  patentesST %>%
+  st_transform(crs = 5367)
+  
+licencia_buffer_ruta121 <-
+  st_join(licencia, buffer_ruta121) %>%
+  filter(!is.na(codigo))
+
+plot(
+  st_union(buffer_ruta121),
+  main = "Actividades comerciales en la ruta nacional 121",
+  axes = TRUE,
+  graticule = TRUE
+)
+
+plot (ruta121$geometry, col = "dark orange", add= TRUE)
+plot (licencia_buffer_ruta121, pch = 10, col = "red", add = TRUE)
+plot (canton_sa$geometry, add= TRUE)
+
+
+```
 
 
 
