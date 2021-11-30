@@ -65,6 +65,7 @@ red_vial <-
   st_transform(4326)
 
 
+
 # Lectura de archivo CSV de patentes comerciales en Santa Ana
 Patente_final <-
   st_read(
@@ -210,7 +211,7 @@ renderLeaflet({
 })
 
 ```
-Tabla
+
 ===================================== 
 
 Column {data-width=450}
@@ -234,13 +235,10 @@ renderDT({
   })
 ```
 
-Gráfico {data-orientation=rows}
- 
-
 Row {data-width=350}
 -----------------------------------------------------------------------
 
-### Actividades comerciales en Santa ANA
+### Actividades comerciales en Santa Ana
 
 ```{r}
 renderPlot({
@@ -367,47 +365,6 @@ Un ejemplo de ello, son los centros educativos que buscan ubicaciones estratégi
 En el siguiente mapa se pueden apreciar los centros educativos que se ubican en un radio de 400 metros de la ruta nacional n°121:
 
 ### Actividades económicas en la Ruta Nacional 121
-
-```{r}
-
-#Filtrar ruta 121
- 
-ruta_121 <-
-  red_vial %>%
-  filter(num_utgv == "RN121")
-
-licencia <-
-  patentesST %>%
-  filter(Actividad == "Educativa")
-
-# Buffer que rodea la ruta 121
-
-buffer_ruta_121 <-
-  ruta_121 %>%
-  st_buffer(dist = 400)
-
-licencia_buffer_ruta_121 <-
-  st_join(licencia, buffer_ruta_121)
-
-plot(
-  st_union(buffer_ruta_121),
-  main = "Centros educativos en ruta nacional 121",
-  axes = TRUE,
-  graticule = TRUE
-)
-
-plot(ruta_121$geometry,
-     col = "turquoise",
-     add = TRUE)
-
-plot(
-  licencia_buffer_ruta_121,
-  pch = 16,
-  col = "purple",
-  add = TRUE
-)
-
-```
 
 
 

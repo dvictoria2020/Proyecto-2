@@ -1,13 +1,13 @@
 name: Proyecto-2
-title:
+title: Proyecto-2
 username:
-account: dvictoria2020
+account: xk8zli-dvictoria2020
 server: shinyapps.io
 hostUrl: https://api.shinyapps.io/v1
 appId: 5172475
-bundleId: 5291166
+bundleId: 5291164
 url: https://dvictoria2020.shinyapps.io/Proyecto-2/
-when: 1637815586.13541
-lastSyncTime: 1637815586.13541
+when: 1637815468.12042
+lastSyncTime: 1637815468.12042
 asMultiple: FALSE
 asStatic: FALSE
